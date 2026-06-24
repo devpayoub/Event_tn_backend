@@ -1,10 +1,12 @@
 from datetime import datetime, timezone
+from math import ceil
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from dependencies import get_current_user, optional_current_user
 from models.post import Post
 from models.user import User
+from schemas.common import PaginatedResponse
 from schemas.post import PostCreate, PostResponse, PostUpdate
 
 router = APIRouter(prefix="/api/posts", tags=["Posts"])
@@ -28,12 +30,19 @@ def _post_to_response(p: Post) -> PostResponse:
     )
 
 
-@router.get("", response_model=list[PostResponse])
-def list_posts(_user: User | None = Depends(optional_current_user)):
+@router.get("", response_model=PaginatedResponse)
+def list_posts(
+    _user: User | None = Depends(optional_current_user),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+):
     qs = Post.objects()
     if not _user:
         qs = qs.filter(status__ne="draft")
-    return [_post_to_response(p) for p in qs.order_by("-createdAt")]
+    total = qs.count()
+    pages = ceil(total / limit) if total > 0 else 1
+    items = [_post_to_response(p) for p in qs.order_by("-createdAt").skip(skip).limit(limit)]
+    return PaginatedResponse(items=items, total=total, page=(skip // limit) + 1, pages=pages)
 
 
 @router.post("", response_model=PostResponse, status_code=status.HTTP_201_CREATED)
