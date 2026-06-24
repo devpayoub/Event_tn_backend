@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     jwt_secret: str = "super-secret-key-change-in-production"
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 1440
+    frontend_url: str = "http://localhost:3000"
 
     class Config:
         env_file = ".env"
