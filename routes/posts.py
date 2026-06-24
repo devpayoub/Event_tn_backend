@@ -34,15 +34,20 @@ def _post_to_response(p: Post) -> PostResponse:
 def list_posts(
     _user: User | None = Depends(optional_current_user),
     skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=0, le=100),
 ):
     qs = Post.objects()
     if not _user:
         qs = qs.filter(status__ne="draft")
     total = qs.count()
-    pages = ceil(total / limit) if total > 0 else 1
-    items = [_post_to_response(p) for p in qs.order_by("-createdAt").skip(skip).limit(limit)]
-    return PaginatedResponse(items=items, total=total, page=(skip // limit) + 1, pages=pages)
+    effective = limit if limit > 0 else total
+    pages = ceil(total / effective) if total > 0 and effective > 0 else 1
+    cur_page = (skip // limit) + 1 if limit > 0 else 1
+    qs = qs.order_by("-createdAt")
+    if effective > 0:
+        qs = qs.skip(skip).limit(effective)
+    items = [_post_to_response(p) for p in qs]
+    return PaginatedResponse(items=items, total=total, page=cur_page, pages=pages)
 
 
 @router.post("", response_model=PostResponse, status_code=status.HTTP_201_CREATED)
