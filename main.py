@@ -100,7 +100,7 @@ def root():
       MongoDB <span>{"Connected" if db_ok else "Disconnected"}</span><br />
       <span>100% Uptime</span>
     </div>
-    <div class="badge">API Health • {settings.mongodb_uri.split("@")[-1] if "@" in settings.mongodb_uri else "localhost"}</div>
+    <div class="badge">API Health • v1.0.0</div>
   </div>
 </body>
 </html>"""
